@@ -1,0 +1,9 @@
+# common files
+.DS_Store
+.idea
+.vs
+
+# common folders
+bin
+obj
+nupkg

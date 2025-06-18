@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    // Material Icons Theme
+    "pkief.material-icon-theme",
+    // C# Dev Kit
+    "ms-dotnettools.csdevkit",
+    // CSharpier - Code formatter
+    "csharpier.csharpier-vscode",
+    // EditorConfig for VS Code
+    "editorconfig.editorconfig",
+    // Prettier - Code formatter
+    "esbenp.prettier-vscode"
+  ],
+  "unwantedRecommendations": []
+}
