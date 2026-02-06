@@ -39,14 +39,14 @@ Namespaceator removes that entire problem.
 ### Global installation
 
 ```sh
-dotnet tool install -g Namespaceator
+dotnet tool install -g namespaceator
 ```
 
 ### Local installation (recommended for teams)
 
 ```sh
 dotnet new tool-manifest
-dotnet tool install Namespaceator
+dotnet tool install namespaceator
 ```
 
 ## 🚀 Usage
