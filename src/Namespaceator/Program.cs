@@ -1,5 +1,4 @@
-﻿using Namespaceator.Models;
-using Namespaceator.Tree;
+﻿using Namespaceator.Tree;
 
 var path = args.Length > 0 ? args[0] : null;
 if (string.IsNullOrEmpty(path))

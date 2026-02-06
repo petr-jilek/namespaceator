@@ -47,6 +47,28 @@ public class CsDirModel
             subDirModel.Mutable_Fill();
     }
 
+    public async Task<List<NamespaceChange>> UpdateNamespacesAsync()
+    {
+        var namespaceChanges = new List<NamespaceChange>();
+
+        foreach (var subDir in SubDirs)
+            namespaceChanges.AddRange(await subDir.UpdateNamespacesAsync());
+
+        foreach (var csFile in CsFiles)
+            namespaceChanges.AddRange(await csFile.UpdateNamespacesAsync());
+
+        return namespaceChanges;
+    }
+
+    public async Task UpdateUsingsAsync(List<NamespaceChange> namespaceChanges)
+    {
+        foreach (var subDir in SubDirs)
+            await subDir.UpdateUsingsAsync(namespaceChanges);
+
+        foreach (var csFile in CsFiles)
+            await csFile.UpdateUsingsAsync(namespaceChanges);
+    }
+
     public PrintLines GetTreePrintLines(int indentLevel = 0)
     {
         var indentChar = ' ';

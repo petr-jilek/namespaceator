@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using Namespaceator.Models;
+
 namespace Namespaceator.Tree;
 
 public class CsFileModel
@@ -38,4 +41,20 @@ public class CsFileModel
     }
 
     public string TargetNamespace => string.Join('.', TargetNamespaces);
+
+    public string PathFull => Path.Combine(ParentDir.DirPathFull, FileNameFull);
+
+    public async Task<List<NamespaceChange>> UpdateNamespacesAsync()
+    {
+        var text = await File.ReadAllTextAsync(PathFull);
+
+        var namespaceChanges = new List<NamespaceChange>();
+
+        return namespaceChanges;
+    }
+
+    public async Task UpdateUsingsAsync(List<NamespaceChange> namespaceChanges)
+    {
+        var text = await File.ReadAllTextAsync(PathFull);
+    }
 }
