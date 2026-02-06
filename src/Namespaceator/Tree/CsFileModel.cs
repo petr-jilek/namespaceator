@@ -47,16 +47,17 @@ public class CsFileModel
     // Matches:
     //   namespace Foo.Bar;
     //   namespace Foo.Bar {
-    // (supports attributes/whitespace above due to multiline scanning, but only replaces the first declaration found)
+    // Only replaces the first namespace declaration found.
     private static readonly Regex NamespaceDeclRegex = new(
-        pattern: @"(?m)^(?<indent>\s*)namespace\s+(?<ns>[A-Za-z_][A-Za-z0-9_\.]*)\s*(?<term>;|\{)\s*$",
+        pattern: @"(?m)^(?<indent>[ \t]*)namespace[ \t]+(?<ns>[A-Za-z_][A-Za-z0-9_\.]*)[ \t]*(?<term>;|\{)[ \t]*$",
         options: RegexOptions.Compiled
     );
 
-    // Matches using directives at start of line (including global using), without trying to parse the whole language.
-    // Captures the right-hand target (after '=' if alias, otherwise the namespace/type).
+    // IMPORTANT: This regex is written to NEVER consume newlines around the using directive,
+    // which prevents "random" removal of blank lines when we replace the match.
+    // Captures optional EOL so we can preserve it.
     private static readonly Regex UsingLineRegex = new(
-        pattern: @"(?m)^(?<indent>\s*)(?<global>global\s+)?using\s+(?<body>[^;]+)\s*;\s*$",
+        pattern: @"(?m)^(?<indent>[ \t]*)(?<global>global[ \t]+)?using[ \t]+(?<body>[^;\r\n]+)[ \t]*;[ \t]*(?<eol>\r?\n)?$",
         options: RegexOptions.Compiled
     );
 
@@ -65,7 +66,7 @@ public class CsFileModel
         var text = await File.ReadAllTextAsync(PathFull).ConfigureAwait(false);
 
         var match = NamespaceDeclRegex.Match(text);
-        if (match.Success is false)
+        if (!match.Success)
             return [];
 
         var oldNs = match.Groups["ns"].Value;
@@ -73,7 +74,7 @@ public class CsFileModel
 
         var change = new NamespaceChange { OldNamespace = oldNs, TargetNamespace = targetNs };
 
-        if (change.IsNoChange is false)
+        if (!change.IsNoChange)
         {
             // Replace only the namespace identifier, keep indentation + terminator (; or {) exactly as-is.
             var nsStart = match.Groups["ns"].Index;
@@ -93,14 +94,13 @@ public class CsFileModel
             return;
 
         // Only changes that actually change something
-        var changes = namespaceChanges.Where(c => c.IsNoChange is false).ToList();
+        var changes = namespaceChanges.Where(c => !c.IsNoChange).ToList();
         if (changes.Count == 0)
             return;
 
         var text = await File.ReadAllTextAsync(PathFull).ConfigureAwait(false);
         var original = text;
 
-        // Update using lines one by one (safer than global search/replace).
         text = UsingLineRegex.Replace(
             text,
             m =>
@@ -108,6 +108,7 @@ public class CsFileModel
                 var indent = m.Groups["indent"].Value;
                 var globalKw = m.Groups["global"].Success ? "global " : "";
                 var body = m.Groups["body"].Value.Trim();
+                var eol = m.Groups["eol"].Success ? m.Groups["eol"].Value : "";
 
                 // body examples:
                 //   Foo.Bar
@@ -115,25 +116,24 @@ public class CsFileModel
                 //   Alias = Foo.Bar
                 //   Alias = global::Foo.Bar.Baz
                 //
-                // We will:
-                // - Leave "static ..." untouched (namespace changes there are ambiguous).
+                // Policy:
+                // - Leave "static ..." untouched (could be type references; risky).
                 // - Update RHS of alias (after '=') for namespace prefix matches.
-                // - Update non-alias plain `using Foo.Bar` when it exactly matches OldNamespace.
-                // - Also update `global::Old...` prefix on RHS (still only in using lines).
+                // - Update non-alias `using Foo.Bar;` only when it exactly matches OldNamespace.
+                // - Also update `global::Old...` in the same cases (only within using lines).
 
                 if (body.StartsWith("static ", StringComparison.Ordinal))
-                    return m.Value; // do nothing
+                    return m.Value; // preserve original exactly
 
                 string updatedBody = body;
 
-                // Alias form?
                 var eqIndex = body.IndexOf('=');
                 if (eqIndex >= 0)
                 {
+                    // Alias form: "Alias = Something"
                     var left = body[..eqIndex].TrimEnd();
                     var right = body[(eqIndex + 1)..].TrimStart();
 
-                    // Normalize optional global:: prefix (we can update it too, but only when it refers to the old namespace)
                     foreach (var ch in changes)
                         right = ReplaceNamespacePrefixInUsingRhs(right, ch.OldNamespace, ch.TargetNamespace);
 
@@ -141,7 +141,7 @@ public class CsFileModel
                 }
                 else
                 {
-                    // Non-alias: only update if it matches exactly the old namespace.
+                    // Non-alias: update only exact matches
                     foreach (var ch in changes)
                     {
                         if (string.Equals(updatedBody, ch.OldNamespace, StringComparison.Ordinal))
@@ -150,7 +150,6 @@ public class CsFileModel
                             break;
                         }
 
-                        // Also handle `global::OldNamespace` exactly
                         if (string.Equals(updatedBody, $"global::{ch.OldNamespace}", StringComparison.Ordinal))
                         {
                             updatedBody = $"global::{ch.TargetNamespace}";
@@ -159,12 +158,12 @@ public class CsFileModel
                     }
                 }
 
-                // Reconstruct the using line, preserving indent/global using
-                return $"{indent}{globalKw}using {updatedBody};";
+                // Reconstruct and preserve original EOL (prevents accidental blank-line loss)
+                return $"{indent}{globalKw}using {updatedBody};{eol}";
             }
         );
 
-        if (string.Equals(text, original, StringComparison.Ordinal) is false)
+        if (!string.Equals(text, original, StringComparison.Ordinal))
             await File.WriteAllTextAsync(PathFull, text).ConfigureAwait(false);
     }
 
@@ -184,7 +183,7 @@ public class CsFileModel
         if (rhs.StartsWith(oldNs + ".", StringComparison.Ordinal))
             return string.Concat(targetNs, rhs.AsSpan(oldNs.Length));
 
-        var globalPrefix = "global::";
+        const string globalPrefix = "global::";
         if (rhs.StartsWith(globalPrefix, StringComparison.Ordinal))
         {
             var after = rhs.Substring(globalPrefix.Length);
