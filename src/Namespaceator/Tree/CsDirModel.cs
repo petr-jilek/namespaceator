@@ -44,7 +44,13 @@ public class CsDirModel
             );
 
         foreach (var subDirModel in SubDirs)
-            subDirModel.Mutable_Fill();
+            subDirModel.Mutable_Fill(excludeDirs);
+    }
+
+    public async Task UpdateNamespacesAndUsingsAsync()
+    {
+        var namespaceChanges = await UpdateNamespacesAsync();
+        await UpdateUsingsAsync(namespaceChanges);
     }
 
     public async Task<List<NamespaceChange>> UpdateNamespacesAsync()
