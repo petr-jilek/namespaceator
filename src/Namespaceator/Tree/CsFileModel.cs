@@ -1,4 +1,4 @@
-namespace Namespaceator.Models;
+namespace Namespaceator.Tree;
 
 public class CsFileModel
 {
