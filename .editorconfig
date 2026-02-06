@@ -157,7 +157,7 @@ csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
 # Others
-dotnet_style_namespace_match_folder = true:error
+dotnet_diagnostic.IDE0130.severity = error
 
 # License header
 file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.

@@ -1,11 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Required for .NET tool packages -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>namespaceator</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <!-- NuGet package metadata -->
+    <PackageId>Namespaceator</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Petr Jilek</Authors>
+    <Description>A .NET tool that keeps C# namespace declarations aligned with your project's folder structure, eliminating mismatches and ensuring a clean, predictable namespace hierarchy.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/petr-jilek/namespaceator</RepositoryUrl>
   </PropertyGroup>
 </Project>
