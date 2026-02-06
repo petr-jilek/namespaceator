@@ -52,15 +52,33 @@ public class CsDirModel
         var indentChar = ' ';
         var indent = new string(indentChar, indentLevel * 2);
 
-        var result = new PrintLines { Lines = [new() { Text = $"{indent}{DirName}", Color = ConsoleColor.Cyan }] };
+        var result = new PrintLines
+        {
+            Lines = [new() { Items = [new() { Text = $"{indent}{DirName}", Color = ConsoleColor.Cyan }] }],
+        };
 
         foreach (var subDir in SubDirs)
             result.Add(subDir.GetTreePrintLines(indentLevel + 1));
 
         foreach (var csProj in CsProjs)
-            result.Lines.Add(new() { Text = $"{indent}{indentChar}{csProj.FileNameFull}", Color = ConsoleColor.Red });
+            result.Lines.Add(
+                new()
+                {
+                    Items = [new() { Text = $"{indent}{indentChar}{csProj.FileNameFull}", Color = ConsoleColor.Red }],
+                }
+            );
         foreach (var csFile in CsFiles)
-            result.Lines.Add(new() { Text = $"{indent}{indentChar}{csFile.FileNameFull}", Color = ConsoleColor.Green });
+            result.Lines.Add(
+                new()
+                {
+                    Items =
+                    [
+                        new() { Text = $"{indent}{indentChar}{csFile.FileNameFull}", Color = ConsoleColor.Green },
+                        new() { Text = $"  TargetNamespace: ", Color = ConsoleColor.White },
+                        new() { Text = csFile.TargetNamespace, Color = ConsoleColor.Yellow },
+                    ],
+                }
+            );
 
         return result;
     }
